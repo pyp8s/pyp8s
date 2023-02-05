@@ -41,7 +41,7 @@ import json
 import time
 
 
-VERSION = (1, 0, 0)
+VERSION = (1, 0, 1)
 __version__ = ".".join(map(str, VERSION))
 
 
@@ -116,6 +116,13 @@ class MetricsHandler(metaclass=Singleton):
     else:
       self.metrics[metric_name] = increment
 
+
+  @staticmethod
+  def set(metric_name, value):
+    self = MetricsHandler()
+    logging.debug(f"UUID={self.uuid} incrementing {metric_name} for {increment}")
+
+    self.metrics[metric_name] = value
 
 
 class ReqHandlerMetrics(BaseHTTPRequestHandler):
