@@ -41,10 +41,6 @@ import json
 import time
 
 
-VERSION = (2, 0, 0)
-__version__ = ".".join(map(str, VERSION))
-
-
 class Singleton(type):
 
     _instance = None
@@ -152,7 +148,7 @@ class ReqHandlerMetrics(BaseHTTPRequestHandler):
 
         if self.path == "/":
             MetricsHandler.inc("http_get_index", 1)
-            header = """<html><head><title>Node Exporter</title></head><body><p><a href="/metrics">Metrics</a></p></body></html>"""
+            header = """<html><head><title>pyp8s Exporter</title></head><body><p><a href="/metrics">Metrics</a></p></body></html>\n"""
             self.wfile.write(bytes(header, "utf-8"))
 
         elif self.path == "/metrics":
