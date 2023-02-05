@@ -61,6 +61,7 @@ class MetricsHandler(metaclass=Singleton):
     self.uuid = str(uuid.uuid4())
     self.server = None
     self.metrics = {}
+    self.metrics_name = "global"
 
 
   @staticmethod
@@ -102,7 +103,7 @@ class MetricsHandler(metaclass=Singleton):
   @staticmethod
   def get_metrics_name():
     self = MetricsHandler()
-    logging.debug(f"UUID={self.uuid} Returning metrics name: '{metric_name}'")
+    logging.debug(f"UUID={self.uuid} Returning metrics name: '{self.metrics_name}'")
     return self.metrics_name
 
 
@@ -120,7 +121,7 @@ class MetricsHandler(metaclass=Singleton):
   @staticmethod
   def set(metric_name, value):
     self = MetricsHandler()
-    logging.debug(f"UUID={self.uuid} incrementing {metric_name} for {increment}")
+    logging.debug(f"UUID={self.uuid} setting {metric_name} to {value}")
 
     self.metrics[metric_name] = value
 
@@ -174,6 +175,7 @@ if __name__ == '__main__':
   MetricsHandler.inc("calls", 20)
   MetricsHandler.inc("calls", 1000)
   MetricsHandler.inc("calls", 1)
+  MetricsHandler.set("busy", 13)
 
   MetricsHandler.serve()
   logging.debug("Waiting before shutdown")
