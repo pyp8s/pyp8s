@@ -135,6 +135,34 @@ jobs:
           echo "artifacts_list_filename=${PWD}/.build_artifacts" >> "${GITHUB_OUTPUT}"
 
 
+      - name: Compress workspace
+        id: compress_workspace
+        shell: bash
+        run: >-
+          WORKPLACE_ARCHIVE_FILENAME="workspace_${{ github.run_id }}.tar.gz"
+
+          tar --exclude="${WORKPLACE_ARCHIVE_FILENAME}"
+          -zcf "${WORKPLACE_ARCHIVE_FILENAME}"
+          .
+
+          echo "workspace_archive_filename=${PWD}/${WORKPLACE_ARCHIVE_FILENAME}" >> "${GITHUB_OUTPUT}"
+
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3.1.0
+        id: upload_terraform_apply_log
+        if: always()
+        with:
+          name: "workspace_${{ github.run_id }}.tar.gz"
+          path: |
+            ${{ steps.compress_workspace.outputs.workspace_archive_filename }}
+            dist/*.whl
+            dist/*.egg
+
+          if-no-files-found: error
+          retention-days: 90
+
+
       - name: Send notification on build completion
         uses: rest-gateway/notification-action@1.0.9
         if: always()
