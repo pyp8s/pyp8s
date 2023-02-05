@@ -5,14 +5,14 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="py-p8s-metrics",
+    name="pyp8s",
     version=version,
     author="Pavel Kim",
     author_email="hello@pavelkim.com",
     description="Customisable prometheus exporter for your python application",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/reinvented-stuff/py-p8s-metrics",
+    url="https://github.com/pyp8s/pyp8s",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

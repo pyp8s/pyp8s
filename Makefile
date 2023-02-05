@@ -1,8 +1,8 @@
 VERSION := $(shell cat version.py | cut -d "=" -f 2 | tr -d "'")
 PWD := $(shell pwd)
 BUILD_DIR = $(PWD)/dist
-PROG := py-p8s-metrics-$(VERSION)-py3-none-any.whl
-PROG_EGG := py-p8s-metrics-$(VERSION)-py3.10.egg
+PROG := pyp8s-$(VERSION)-py3-none-any.whl
+PROG_EGG := pyp8s-$(VERSION)-py3.10.egg
 
 .PHONY: all version build clean install
 

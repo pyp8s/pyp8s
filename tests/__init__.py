@@ -2,5 +2,5 @@
 # pylint: disable=line-too-long, missing-function-docstring, logging-fstring-interpolation
 # pylint: disable=too-many-locals, broad-except, too-many-arguments, raise-missing-from
 """
-    py-p8s-metrics tests
+    pyp8s tests
 """
