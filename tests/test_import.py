@@ -9,5 +9,5 @@ from pyp8s import MetricsHandler
 
 
 def test_inc_1():
-    metrics_handler = MetricsHandler.inc("testMetric", 1)
+    MetricsHandler.inc("testMetric", 1)
 

@@ -64,7 +64,7 @@ class MetricsHandler(metaclass=Singleton):
         self.metrics_name = "global"
 
     @staticmethod
-    def serve(listen_address="0.0.0.0", listen_port=19001):
+    def serve(listen_address="127.0.0.1", listen_port=19001):
         self = MetricsHandler()
         logging.debug(f"UUID={self.uuid} Starting the metrics server on {listen_address} port {listen_port}")
 
@@ -110,7 +110,7 @@ class MetricsHandler(metaclass=Singleton):
         :type metric_name: str
         :param increment: How much the metric should be incremented by
         :type increment: int
-        
+
         :return: None
         :rtype: None
         """
@@ -131,7 +131,7 @@ class MetricsHandler(metaclass=Singleton):
         :type metric_name: str
         :param value: New value for the metric to set
         :type value: int
-        
+
         :return: None
         :rtype: None
         """

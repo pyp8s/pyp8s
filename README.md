@@ -1,4 +1,4 @@
-# py-p8s-metrics
+# pyp8s
 
 Customisable prometheus exporter for your python application.
 
