@@ -9,7 +9,7 @@ Currently not that much customisable, though.
 MetricsHandler implements a singleton.
 
 ```python
-from py_p8s_metrics import MetricsHandler as meh
+from pyp8s import MetricsHandler as meh
 
 if __name__ == '__main__':
 	meh.serve(listen_address="0.0.0.0", listen_port=8081)
