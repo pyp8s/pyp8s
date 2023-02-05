@@ -115,7 +115,7 @@ jobs:
         shell: bash
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install pytest
+          python3 -m pip install pytest setuptools wheel
 
 
       - name: Run tests
