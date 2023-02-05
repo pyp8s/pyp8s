@@ -1,12 +1,12 @@
 import setuptools
-from version import version
+from pyp8s import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="pyp8s",
-    version=version,
+    version=__version__,
     author="Pavel Kim",
     author_email="hello@pavelkim.com",
     description="Customisable prometheus exporter for your python application",

@@ -5,5 +5,4 @@
     pyp8s module
 """
 
-from .metrics import MetricsHandler
-from ._version import __version__
+__version__ = "2.0.0"
