@@ -41,7 +41,7 @@ import json
 import time
 
 
-VERSION = (1, 0, 1)
+VERSION = (1, 0, 2)
 __version__ = ".".join(map(str, VERSION))
 
 
@@ -96,8 +96,8 @@ class MetricsHandler(metaclass=Singleton):
   @staticmethod
   def set_metrics_name(metrics_name):
     self = MetricsHandler()
-    logging.debug(f"UUID={self.uuid} Setting metrics name to '{metric_name}'")
-    self.metrics_name = metric_name
+    logging.debug(f"UUID={self.uuid} Setting metrics name to '{metrics_name}'")
+    self.metrics_name = metrics_name
 
 
   @staticmethod
