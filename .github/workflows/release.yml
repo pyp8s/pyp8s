@@ -210,25 +210,6 @@ jobs:
           twine upload --disable-progress-bar "${{ steps.validate_whl.outputs.whl_filename }}"
 
 
-      - name: Notify about release
-        uses: rest-gateway/notification-action@1.0.9
-        with:
-          message: >-
-            <b>Release ${{env.APP_NAME}} ${{env.PLANNED_RELEASE_NAME}}:</b>
-
-            <b>Artifactory:</b>
-            <code>${{ secrets.ARTIFACTORY_REPO_URL }}</code>
-
-            <b>Release:</b>
-            <code>https://github.com/${{ github.repository }}/releases/tag/${{env.PLANNED_VERSION}}</code>
-
-          recipient: "${{ secrets.NOTIFICATIONS_DEFAULT_RECIPIENT }}"
-          rest_gateway_url: "${{ secrets.REST_GATEWAY_API_URL }}"
-          rest_gateway_token: "${{ secrets.REST_GATEWAY_TOKEN }}"
-          rest_gateway_bot_name: "${{ secrets.REST_GATEWAY_BOT_NAME }}"
-
-
-
   after_build:
     name: After release process
     runs-on: ubuntu-latest
