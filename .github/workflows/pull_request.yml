@@ -82,6 +82,7 @@ jobs:
           --url "${URL}" \
           -d "{\"body\":\"v${{steps.validate_new_version.outputs.planned_version}} can be released\"}"
 
+
   build_and_test:
     name: Build and Test
 
@@ -95,10 +96,12 @@ jobs:
 
     steps:
 
+
       - name: Check out this repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
 
       - name: Run tests
         id: run_tests
