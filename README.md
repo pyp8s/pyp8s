@@ -4,6 +4,12 @@ Customisable prometheus exporter for your python application.
 
 Currently not that much customisable, though.
 
+## Installation
+
+```bash
+python3 -m pip install pyp8s
+```
+
 ## Usage
 
 MetricsHandler implements a singleton.
@@ -19,8 +25,11 @@ if __name__ == '__main__':
 	meh.set("otherMetricKind", 9000)
 ```
 
-```
+```bash
 curl 127.0.0.1:8081/metrics
+```
+
+```bash
 # TYPE myMetric counter
 myMetric{kind="significantMetricKind"} 2
 myMetric{kind="otherMetricKind"} 9000

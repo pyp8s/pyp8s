@@ -151,7 +151,7 @@ jobs:
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3.1.0
-        id: upload_terraform_apply_log
+        id: upload_build_artifacts
         if: always()
         with:
           name: "${{ env.APP_NAME }}_${{ github.run_id }}"
