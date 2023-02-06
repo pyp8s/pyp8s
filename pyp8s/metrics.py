@@ -59,20 +59,38 @@ class MetricsHandler(metaclass=Singleton):
         self.metrics = {}
         self.metrics_name = "global"
 
+    def __is_serving(self):
+        return self.server is not None
+
+    @staticmethod
+    def __craft_metric_key(**kwargs):
+
+        logging.debug(f"Crafting a metric key from kwargs='{kwargs}'")
+
+        kwargs_items_sorted = sorted(kwargs.items(), key=lambda x: x[0].casefold())
+        logging.debug(f"Crafting a metric key kwargs_items_sorted='{kwargs_items_sorted}'")
+
+        kwargs_items_joined_pairs = ["_".join([str(pair[0]), str(pair[1])]) for pair in kwargs_items_sorted]
+        logging.debug(f"Crafting a metric key kwargs_items_joined_pairs='{kwargs_items_joined_pairs}'")
+
+        kwargs_items_joined_full = "_".join(kwargs_items_joined_pairs)
+        logging.debug(f"Crafting a metric key kwargs_items_joined_full='{kwargs_items_joined_full}'")
+
+        return kwargs_items_joined_full
+
+    @staticmethod
+    def __format_labels(**kwargs):
+        return ["=".join([f"{pair[0]}", f'"{pair[1]}"']) for pair in kwargs.items()]
+
     @staticmethod
     def serve(listen_address="127.0.0.1", listen_port=19001):
         self = MetricsHandler()
 
-        if self.server is not None:
+        if not self.__is_serving():
 
-            logging.error(f"UUID={self.uuid} Tried to start the metrics server twice")
-            raise Exception(f"UUID={self.uuid} Server already started: {self.server}")
-
-        else:
             logging.debug(f"UUID={self.uuid} Starting the metrics server on {listen_address} port {listen_port}")
 
-            self.server = ThreadedHTTPServer(
-                (listen_address, listen_port), ReqHandlerMetrics)
+            self.server = ThreadedHTTPServer((listen_address, listen_port), ReqHandlerMetrics)
             self.server_thread = threading.Thread(target=self.server.serve_forever)
 
             self.server_thread.daemon = True
@@ -80,6 +98,10 @@ class MetricsHandler(metaclass=Singleton):
             logging.info(f"UUID={self.uuid} Starting metrics server")
             self.server_thread.start()
             logging.info(f"UUID={self.uuid} Metrics server started")
+
+        else:
+            logging.error(f"UUID={self.uuid} Tried to start the metrics server twice")
+            raise Exception(f"UUID={self.uuid} Server already started: {self.server}")
 
     @staticmethod
     def shutdown():
@@ -111,43 +133,87 @@ class MetricsHandler(metaclass=Singleton):
         return self.metrics_name
 
     @staticmethod
-    def inc(metric_name, increment):
+    def inc(metric_name, increment, *args, **kwargs):
         """Increments metric by given number
 
         :param metric_name: Metric name to manipulate
         :type metric_name: str
         :param increment: How much the metric should be incremented by
         :type increment: int
+        :param **args: Ignored
+        :type **args: any
+        :param **kwargs: Additional labels for the metric
+        :type **kwargs: dict[str]
 
         :return: None
         :rtype: None
         """
 
         self = MetricsHandler()
-        logging.debug(f"UUID={self.uuid} incrementing {metric_name} for {increment}")
 
-        if metric_name in self.metrics:
-            self.metrics[metric_name] += increment
+        metric_key = self.__craft_metric_key(kind=metric_name, **kwargs)
+        logging.debug(f"UUID={self.uuid} retrieved metric key '{metric_key}'")
+
+        if metric_key not in self.metrics:
+
+            logging.debug(f"UUID={self.uuid} Initialising metric '{metric_key}'")
+
+            self.metrics[metric_key] = {
+                "value": increment,
+                "labels": {
+                    "kind": metric_name,
+                    **kwargs  # TODO: Validate kwargs before saving them
+                },
+                "labels_formatted": self.__format_labels(kind=metric_name, **kwargs)
+            }
+
+            logging.debug(f"UUID={self.uuid} New metric initialised: '{self.metrics[metric_key]}'")
+
         else:
-            self.metrics[metric_name] = increment
+            logging.debug(f"UUID={self.uuid} Incrementing existing metric '{metric_key}' (current {self.metrics[metric_key]['value']})")
+            self.metrics[metric_key]["value"] += increment
+            logging.debug(f"UUID={self.uuid} Incremented metric '{metric_key}' (new {self.metrics[metric_key]['value']})")
 
     @staticmethod
-    def set(metric_name, value):
+    def set(metric_name, value, *args, **kwargs):
         """Sets metric value to a given number
 
         :param metric_name: Metric name to manipulate
         :type metric_name: str
         :param value: New value for the metric to set
         :type value: int
+        :param **args: Ignored
+        :type **args: any
+        :param **kwargs: Additional labels for the metric
+        :type **kwargs: dict[str]
 
         :return: None
         :rtype: None
         """
 
         self = MetricsHandler()
-        logging.debug(f"UUID={self.uuid} setting {metric_name} to {value}")
 
-        self.metrics[metric_name] = value
+        metric_key = self.__craft_metric_key(kind=metric_name, **kwargs)
+        logging.debug(f"UUID={self.uuid} retrieved metric key '{metric_key}'")
+
+        if metric_key not in self.metrics:  # TODO: Do metric init in a separate function
+
+            logging.debug(f"UUID={self.uuid} Initialising metric '{metric_key}'")
+
+            self.metrics[metric_key] = {
+                "value": value,
+                "labels": {
+                    "kind": metric_name,
+                    **kwargs  # TODO: Validate kwargs before saving them
+                },
+                "labels_formatted": self.__format_labels(kind=metric_name, **kwargs)
+            }
+
+            logging.debug(f"UUID={self.uuid} New metric initialised: '{self.metrics[metric_key]}'")
+
+        else:
+            self.metrics[metric_name]['value'] = value
+            logging.debug(f"UUID={self.uuid} Set metric '{metric_key}' value='{self.metrics[metric_key]['value']}'")
 
 
 class ReqHandlerMetrics(BaseHTTPRequestHandler):
@@ -168,15 +234,18 @@ class ReqHandlerMetrics(BaseHTTPRequestHandler):
             metric_header = f"""# TYPE {MetricsHandler.get_metrics_name()} counter\n"""
             self.wfile.write(bytes(metric_header, "utf-8"))
 
-            for metric_key, metric_value in MetricsHandler.get_metrics().items():
-                metric_line = f"""{MetricsHandler.get_metrics_name()}{{kind="{metric_key}"}} {metric_value}\n"""
+            for _, metric_payload in MetricsHandler.get_metrics().items():
+
+                metric_value = metric_payload['value']
+                metric_labels_formatted = metric_payload['labels_formatted']
+                metric_labels_formatted_joined = ",".join(metric_labels_formatted)
+
+                metric_line = f"""{MetricsHandler.get_metrics_name()}{{{metric_labels_formatted_joined}}} {metric_value}\n"""
                 self.wfile.write(bytes(metric_line, "utf-8"))
 
         else:
             response = {"error": True, "message": "Bad request, bad"}
             self.wfile.write(json.dumps(response))
-
-        return
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -188,7 +257,7 @@ if __name__ == '__main__':
     logging.root.handlers = []
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s function=%(name)s.%(funcName)s level=%(levelname)s %(message)s",
+        format="%(asctime)s level=%(levelname)s %(message)s function=%(name)s.%(funcName)s",
         handlers=[
             logging.StreamHandler()
         ]
@@ -198,9 +267,19 @@ if __name__ == '__main__':
     MetricsHandler.inc("calls", 20)
     MetricsHandler.inc("calls", 1000)
     MetricsHandler.inc("calls", 1)
+    MetricsHandler.inc("calls", 1, additional="cat", it_is="different")
+
     MetricsHandler.set("busy", 13)
 
-    MetricsHandler.serve()
+    small_hack = {
+        "from": "Glasgow",
+        "if": "fi",
+    }
+
+    MetricsHandler.set("busy", 200, **small_hack)
+    MetricsHandler.set("busy", 4, **{"for": "the", "gods": "sake", "please": "stop"})
+
+    MetricsHandler.serve(listen_address="127.0.0.1", listen_port=9000)
     logging.debug("Waiting before shutdown")
     time.sleep(20)
     MetricsHandler.shutdown()

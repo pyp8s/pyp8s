@@ -12,17 +12,19 @@ python3 -m pip install pyp8s
 
 ## Usage
 
+Examples: [https://github.com/pyp8s/examples](https://github.com/pyp8s/examples)
+
 MetricsHandler implements a singleton.
 
 ```python
 from pyp8s import MetricsHandler as meh
 
 if __name__ == '__main__':
-	meh.serve(listen_address="0.0.0.0", listen_port=8081)
-	meh.set_metrics_name("myMetric")
-	meh.inc("significantMetricKind", 1)
-	meh.inc("significantMetricKind", 1)
-	meh.set("otherMetricKind", 9000)
+    meh.serve(listen_address="0.0.0.0", listen_port=8081)
+    meh.set_metrics_name("myMetric")
+    meh.inc("significantMetricKind", 1)
+    meh.inc("significantMetricKind", 1)
+    meh.set("otherMetricKind", 9000, can="have", extra="labels", since="2.1.0")
 ```
 
 ```bash
@@ -32,7 +34,7 @@ curl 127.0.0.1:8081/metrics
 ```bash
 # TYPE myMetric counter
 myMetric{kind="significantMetricKind"} 2
-myMetric{kind="otherMetricKind"} 9000
+myMetric{kind="otherMetricKind",can="have",extra="labels",since="2.1.0"} 9000
 ```
 
 ## Test environment
