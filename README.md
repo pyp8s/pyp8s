@@ -12,6 +12,8 @@ python3 -m pip install pyp8s
 
 ## Usage
 
+Examples: [https://github.com/pyp8s/examples](https://github.com/pyp8s/examples)
+
 MetricsHandler implements a singleton.
 
 ```python
