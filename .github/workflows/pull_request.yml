@@ -82,6 +82,7 @@ jobs:
           --url "${URL}" \
           -d "{\"body\":\"v${{steps.validate_new_version.outputs.planned_version}} can be released\"}"
 
+
   build_and_test:
     name: Build and Test
 
@@ -95,18 +96,71 @@ jobs:
 
     steps:
 
+
       - name: Check out this repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+
+      - name: Set up Python3
+        id: setup_python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+
+      - name: Prepare environment
+        id: prepare_build_env
+        shell: bash
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pytest setuptools wheel
+
+
       - name: Run tests
         id: run_tests
         shell: bash
         run: >-
-          python3 -m pip install pytest
-
           python3 -m pytest
+
+
+      - name: Build python package
+        id: run_build
+        shell: bash
+        run: |
+          make clean build
+          cat .build_artifacts
+
+          echo "artifacts_list_filename=${PWD}/.build_artifacts" >> "${GITHUB_OUTPUT}"
+
+
+      - name: Compress workspace
+        id: compress_workspace
+        shell: bash
+        if: 1 == 2
+        run: >-
+          WORKPLACE_ARCHIVE_FILENAME="workspace_${{ github.run_id }}.tar.gz"
+
+          tar --exclude="${WORKPLACE_ARCHIVE_FILENAME}"
+          -zcf "${WORKPLACE_ARCHIVE_FILENAME}"
+          .
+
+          echo "workspace_archive_filename=${PWD}/${WORKPLACE_ARCHIVE_FILENAME}" >> "${GITHUB_OUTPUT}"
+
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3.1.0
+        id: upload_terraform_apply_log
+        if: always()
+        with:
+          name: "${{ env.APP_NAME }}_${{ github.run_id }}"
+          path: |
+            dist/*.whl
+            dist/*.egg
+
+          if-no-files-found: error
+          retention-days: 90
 
 
       - name: Send notification on build completion
@@ -117,20 +171,7 @@ jobs:
             <b>Workflow:</b>   ${GITHUB_WORKFLOW}
             <b>Repository:</b> ${GITHUB_REPOSITORY}
 
-            <b>Matrix:</b>
-            Version: ${{ matrix.version }}
-            Ref: ${{ env.PLANNED_VERSION_COMMIT }}
-            Label: ${{ matrix.runs-on.label }}
-            Arch: ${{ matrix.runs-on.arch }}
-
-            <b>Outcome:</b> 
-            checkout_tdlib_repo: ${{ steps.checkout_tdlib_repo.outcome }}
-            print_directory_contents: ${{ steps.print_directory_contents.outcome }}
-            sonarcloud_scan: ${{ steps.sonarcloud_scan.outcome }}
-
             <b>Run:</b> <code>https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}</code>
-            <b>Artifact:</b> ${{ secrets.ARTIFACTORY_REPO_URL }}/${{ env.ARTIFACT_TARGZ_NAME }}
-            <b>Artifact repo:</b> ${{ secrets.ARTIFACTORY_REPO_URL }}
 
           recipient: "${{ secrets.NOTIFICATIONS_DEFAULT_RECIPIENT }}"
           rest_gateway_url: "${{ secrets.REST_GATEWAY_API_URL }}"
