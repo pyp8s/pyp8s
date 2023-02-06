@@ -154,6 +154,7 @@ jobs:
         id: upload_terraform_apply_log
         if: always()
         with:
+          name: "${{ env.APP_NAME }}_${{ github.run_id }}"
           path: |
             dist/*.whl
             dist/*.egg
