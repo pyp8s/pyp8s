@@ -138,6 +138,7 @@ jobs:
       - name: Compress workspace
         id: compress_workspace
         shell: bash
+        if: 1 == 2
         run: >-
           WORKPLACE_ARCHIVE_FILENAME="workspace_${{ github.run_id }}.tar.gz"
 
@@ -153,9 +154,7 @@ jobs:
         id: upload_terraform_apply_log
         if: always()
         with:
-          name: "workspace_${{ github.run_id }}.tar.gz"
           path: |
-            ${{ steps.compress_workspace.outputs.workspace_archive_filename }}
             dist/*.whl
             dist/*.egg
 
