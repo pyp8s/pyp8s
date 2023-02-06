@@ -55,7 +55,7 @@ jobs:
         id: prepare_version_file
         shell: bash
         run: >-
-          grep __version__ pyp8s/_version.py | cut -d "=" -f 2 | tr -d "' " > .version
+          grep __version__ pyp8s/_version.py | cut -d "=" -f 2 | tr -d "'\" " > .version
 
 
       - name: Use latest released action
