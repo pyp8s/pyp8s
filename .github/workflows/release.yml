@@ -81,13 +81,13 @@ jobs:
     outputs:
       job_status: ${{ job.status }}
 
-      checkout_code: steps.checkout_code.outcome
-      setup_python: steps.setup_python.outcome
-      prepare_build_env: steps.prepare_build_env.outcome
-      run_build: steps.run_build.outcome
-      generate_changelog: steps.generate_changelog.outcome
-      create_release: steps.create_release.outcome
-      upload_release_assets: steps.upload_release_assets.outcome
+      checkout_code: ${{ steps.checkout_code.outcome }}
+      setup_python: ${{ steps.setup_python.outcome }}
+      prepare_build_env: ${{ steps.prepare_build_env.outcome }}
+      run_build: ${{ steps.run_build.outcome }}
+      generate_changelog: ${{ steps.generate_changelog.outcome }}
+      create_release: ${{ steps.create_release.outcome }}
+      upload_release_assets: ${{ steps.upload_release_assets.outcome }}
 
       app_name: ${{ env.APP_NAME }}
       planned_version: ${{ needs.validate_new_version.outputs.planned_version }}
