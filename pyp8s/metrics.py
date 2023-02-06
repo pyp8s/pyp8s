@@ -64,26 +64,33 @@ class MetricsHandler(metaclass=Singleton):
         self = MetricsHandler()
 
         if self.server is not None:
+
             logging.error(f"UUID={self.uuid} Tried to start the metrics server twice")
             raise Exception(f"UUID={self.uuid} Server already started: {self.server}")
 
-        logging.debug(f"UUID={self.uuid} Starting the metrics server on {listen_address} port {listen_port}")
+        else:
+            logging.debug(f"UUID={self.uuid} Starting the metrics server on {listen_address} port {listen_port}")
 
-        self.server = ThreadedHTTPServer(
-            (listen_address, listen_port), ReqHandlerMetrics)
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
+            self.server = ThreadedHTTPServer(
+                (listen_address, listen_port), ReqHandlerMetrics)
+            self.server_thread = threading.Thread(target=self.server.serve_forever)
 
-        self.server_thread.daemon = True
+            self.server_thread.daemon = True
 
-        logging.info(f"UUID={self.uuid} Starting metrics server")
-        self.server_thread.start()
-        logging.info(f"UUID={self.uuid} Metrics server started")
+            logging.info(f"UUID={self.uuid} Starting metrics server")
+            self.server_thread.start()
+            logging.info(f"UUID={self.uuid} Metrics server started")
 
     @staticmethod
     def shutdown():
         self = MetricsHandler()
         logging.debug(f"UUID={self.uuid} Shutting down the metrics server")
-        self.server.shutdown()
+
+        try:
+            self.server.shutdown()
+        except Exception as e:
+            logging.error(f"UUID={self.uuid} Couldn't shutdown the metrics server: {e}")
+            raise e
 
     @staticmethod
     def get_metrics():
