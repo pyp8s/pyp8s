@@ -234,7 +234,7 @@ class ReqHandlerMetrics(BaseHTTPRequestHandler):
             metric_header = f"""# TYPE {MetricsHandler.get_metrics_name()} counter\n"""
             self.wfile.write(bytes(metric_header, "utf-8"))
 
-            for metric_key, metric_payload in MetricsHandler.get_metrics().items():
+            for _, metric_payload in MetricsHandler.get_metrics().items():
 
                 metric_value = metric_payload['value']
                 metric_labels_formatted = metric_payload['labels_formatted']
