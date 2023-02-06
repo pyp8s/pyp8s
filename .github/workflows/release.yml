@@ -207,7 +207,13 @@ jobs:
           TWINE_USERNAME: ${{ secrets.PROD_PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PROD_PYPI_PASSWORD }}
         run: |
-          twine upload --disable-progress-bar "${{ steps.validate_whl.outputs.whl_filename }}"
+          while read artifact_filename; do
+            
+            if [[ "${artifact_filename}" =~ .*\.whl ]]; then
+              twine upload --disable-progress-bar "${artifact_filename}"
+            fi
+
+          done < "${{ steps.run_build.outputs.artifacts_list_filename }}"
 
 
   after_build:
