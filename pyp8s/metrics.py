@@ -62,6 +62,11 @@ class MetricsHandler(metaclass=Singleton):
     @staticmethod
     def serve(listen_address="127.0.0.1", listen_port=19001):
         self = MetricsHandler()
+
+        if self.server is not None:
+            logging.error(f"UUID={self.uuid} Tried to start the metrics server twice")
+            raise Exception(f"UUID={self.uuid} Server already started: {self.server}")
+
         logging.debug(f"UUID={self.uuid} Starting the metrics server on {listen_address} port {listen_port}")
 
         self.server = ThreadedHTTPServer(
@@ -78,7 +83,7 @@ class MetricsHandler(metaclass=Singleton):
     def shutdown():
         self = MetricsHandler()
         logging.debug(f"UUID={self.uuid} Shutting down the metrics server")
-        return self.server.shutdown()
+        self.server.shutdown()
 
     @staticmethod
     def get_metrics():
