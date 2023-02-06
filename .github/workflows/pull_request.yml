@@ -171,20 +171,7 @@ jobs:
             <b>Workflow:</b>   ${GITHUB_WORKFLOW}
             <b>Repository:</b> ${GITHUB_REPOSITORY}
 
-            <b>Matrix:</b>
-            Version: ${{ matrix.version }}
-            Ref: ${{ env.PLANNED_VERSION_COMMIT }}
-            Label: ${{ matrix.runs-on.label }}
-            Arch: ${{ matrix.runs-on.arch }}
-
-            <b>Outcome:</b> 
-            checkout_tdlib_repo: ${{ steps.checkout_tdlib_repo.outcome }}
-            print_directory_contents: ${{ steps.print_directory_contents.outcome }}
-            sonarcloud_scan: ${{ steps.sonarcloud_scan.outcome }}
-
             <b>Run:</b> <code>https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}</code>
-            <b>Artifact:</b> ${{ secrets.ARTIFACTORY_REPO_URL }}/${{ env.ARTIFACT_TARGZ_NAME }}
-            <b>Artifact repo:</b> ${{ secrets.ARTIFACTORY_REPO_URL }}
 
           recipient: "${{ secrets.NOTIFICATIONS_DEFAULT_RECIPIENT }}"
           rest_gateway_url: "${{ secrets.REST_GATEWAY_API_URL }}"

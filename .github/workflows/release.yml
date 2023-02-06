@@ -76,7 +76,7 @@ jobs:
       CAN_CREATE_RELEASE: ${{ needs.validate_new_version.outputs.can_create }}
       TAG_EXISTS: ${{ needs.validate_new_version.outputs.tag_exists }}
       BRANCH_NAME: ${{ needs.validate_new_version.outputs.branch_name }}
-      APP_NAME: "tdlib"
+      APP_NAME: "pyp8s"
 
     outputs:
       job_status: ${{ job.status }}
