@@ -212,7 +212,7 @@ class MetricsHandler(metaclass=Singleton):
             logging.debug(f"UUID={self.uuid} New metric initialised: '{self.metrics[metric_key]}'")
 
         else:
-            self.metrics[metric_name]['value'] = value
+            self.metrics[metric_key]['value'] = value
             logging.debug(f"UUID={self.uuid} Set metric '{metric_key}' value='{self.metrics[metric_key]['value']}'")
 
 
