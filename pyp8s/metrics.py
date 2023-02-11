@@ -197,7 +197,7 @@ class MetricsHandler(metaclass=Singleton):
     @staticmethod
     def get_metrics():
         self = MetricsHandler()
-        logging.debug(f"Returning metrics")
+        logging.debug("Returning metrics")
         return self.metrics
 
     @staticmethod
@@ -256,7 +256,7 @@ class MetricsHandler(metaclass=Singleton):
     @staticmethod
     def init(metric_name, metric_type, description=None):
         self = MetricsHandler()
-        
+
         metric = self.__get_metric_obj(metric_name=metric_name)
         metric.set_help(description)
         metric.set_type(metric_type)
