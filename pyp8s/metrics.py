@@ -51,19 +51,19 @@ class Singleton(type):
         return cls._instance
 
 
-class MetricsHandler(metaclass=Singleton):
+class Metric():
 
     def __init__(self):
-        self.uuid = str(uuid.uuid4())
-        self.server = None
-        self.metrics = {}
-        self.metrics_name = "global"
+        self.metric_name = None
+        self.help_header = None
+        self.metric_type = None
 
-    def __is_serving(self):
-        return self.server is not None
+        self.data = {}
 
-    @staticmethod
-    def __craft_metric_key(**kwargs):
+    def __format_labels(self, **kwargs):
+        return ["=".join([f"{pair[0]}", f'"{pair[1]}"']) for pair in kwargs.items()]
+
+    def __craft_labelset_key(self, **kwargs):
 
         logging.debug(f"Crafting a metric key from kwargs='{kwargs}'")
 
@@ -78,9 +78,89 @@ class MetricsHandler(metaclass=Singleton):
 
         return kwargs_items_joined_full
 
-    @staticmethod
-    def __format_labels(**kwargs):
-        return ["=".join([f"{pair[0]}", f'"{pair[1]}"']) for pair in kwargs.items()]
+    def __get_labelset_item(self, *args, **kwargs):
+
+        labelset_key = self.__craft_labelset_key(**kwargs)
+
+        if labelset_key not in self.data:
+
+            logging.debug(f"Initialising metric '{labelset_key}'")
+
+            self.data[labelset_key] = {
+                "value": 0,
+                "labels": {
+                    **kwargs  # TODO: Validate kwargs before saving them
+                },
+                "labels_formatted": self.__format_labels(**kwargs)
+            }
+
+            logging.debug(f"New metric initialised: '{self.data[labelset_key]}'")
+
+        return self.data[labelset_key]
+
+    def set_type(self, metric_type):
+        self.metric_type = metric_type
+
+    def set_help(self, help_header):
+        self.help_header = help_header
+
+    def get_type(self):
+        return self.metric_type
+
+    def get_help(self):
+        return self.help_header
+
+    def get_labelsets(self):
+        return self.data
+
+    def inc(self, increment, *args, **kwargs):
+        """Increments metric by given number
+
+        :param increment: How much the metric should be incremented by
+        :type increment: int
+        :param **args: Ignored
+        :type **args: any
+        :param **kwargs: Additional labels for the metric
+        :type **kwargs: dict[str]
+
+        :return: None
+        :rtype: None
+        """
+
+        metric = self.__get_labelset_item(**kwargs)
+        logging.debug(f"Incrementing metric '{metric}' (current {metric['value']})")
+        metric["value"] += increment
+        logging.debug(f"Incremented metric '{metric}' (new {metric['value']})")
+
+    def set(self, value, *args, **kwargs):
+        """Sets metric value to a given number
+
+        :param value: New value for the metric to set
+        :type value: int
+        :param **args: Ignored
+        :type **args: any
+        :param **kwargs: Additional labels for the metric
+        :type **kwargs: dict[str]
+
+        :return: None
+        :rtype: None
+        """
+
+        metric = self.__get_labelset_item(**kwargs)
+        logging.debug(f"Incrementing metric '{metric}' (current {metric['value']})")
+        metric["value"] = value
+        logging.debug(f"Incremented metric '{metric}' (new {metric['value']})")
+
+
+class MetricsHandler(metaclass=Singleton):
+
+    def __init__(self):
+        self.uuid = str(uuid.uuid4())
+        self.server = None
+        self.metrics = {}
+
+    def __is_serving(self):
+        return self.server is not None
 
     @staticmethod
     def serve(listen_address="127.0.0.1", listen_port=19001):
@@ -117,20 +197,17 @@ class MetricsHandler(metaclass=Singleton):
     @staticmethod
     def get_metrics():
         self = MetricsHandler()
-        logging.debug(f"UUID={self.uuid} Returning metrics")
+        logging.debug("Returning metrics")
         return self.metrics
 
     @staticmethod
-    def set_metrics_name(metrics_name):
+    def __get_metric_obj(metric_name):
         self = MetricsHandler()
-        logging.debug(f"UUID={self.uuid} Setting metrics name to '{metrics_name}'")
-        self.metrics_name = metrics_name
 
-    @staticmethod
-    def get_metrics_name():
-        self = MetricsHandler()
-        logging.debug(f"UUID={self.uuid} Returning metrics name: '{self.metrics_name}'")
-        return self.metrics_name
+        if metric_name not in self.metrics:
+            self.metrics[metric_name] = Metric()
+
+        return self.metrics[metric_name]
 
     @staticmethod
     def inc(metric_name, increment, *args, **kwargs):
@@ -151,28 +228,8 @@ class MetricsHandler(metaclass=Singleton):
 
         self = MetricsHandler()
 
-        metric_key = self.__craft_metric_key(kind=metric_name, **kwargs)
-        logging.debug(f"UUID={self.uuid} retrieved metric key '{metric_key}'")
-
-        if metric_key not in self.metrics:
-
-            logging.debug(f"UUID={self.uuid} Initialising metric '{metric_key}'")
-
-            self.metrics[metric_key] = {
-                "value": increment,
-                "labels": {
-                    "kind": metric_name,
-                    **kwargs  # TODO: Validate kwargs before saving them
-                },
-                "labels_formatted": self.__format_labels(kind=metric_name, **kwargs)
-            }
-
-            logging.debug(f"UUID={self.uuid} New metric initialised: '{self.metrics[metric_key]}'")
-
-        else:
-            logging.debug(f"UUID={self.uuid} Incrementing existing metric '{metric_key}' (current {self.metrics[metric_key]['value']})")
-            self.metrics[metric_key]["value"] += increment
-            logging.debug(f"UUID={self.uuid} Incremented metric '{metric_key}' (new {self.metrics[metric_key]['value']})")
+        metric = self.__get_metric_obj(metric_name=metric_name)
+        metric.inc(increment=increment, **kwargs)
 
     @staticmethod
     def set(metric_name, value, *args, **kwargs):
@@ -193,30 +250,22 @@ class MetricsHandler(metaclass=Singleton):
 
         self = MetricsHandler()
 
-        metric_key = self.__craft_metric_key(kind=metric_name, **kwargs)
-        logging.debug(f"UUID={self.uuid} retrieved metric key '{metric_key}'")
+        metric = self.__get_metric_obj(metric_name=metric_name)
+        metric.set(value=value, **kwargs)
 
-        if metric_key not in self.metrics:  # TODO: Do metric init in a separate function
+    @staticmethod
+    def init(metric_name, metric_type, description=None):
+        self = MetricsHandler()
 
-            logging.debug(f"UUID={self.uuid} Initialising metric '{metric_key}'")
-
-            self.metrics[metric_key] = {
-                "value": value,
-                "labels": {
-                    "kind": metric_name,
-                    **kwargs  # TODO: Validate kwargs before saving them
-                },
-                "labels_formatted": self.__format_labels(kind=metric_name, **kwargs)
-            }
-
-            logging.debug(f"UUID={self.uuid} New metric initialised: '{self.metrics[metric_key]}'")
-
-        else:
-            self.metrics[metric_key]['value'] = value
-            logging.debug(f"UUID={self.uuid} Set metric '{metric_key}' value='{self.metrics[metric_key]['value']}'")
+        metric = self.__get_metric_obj(metric_name=metric_name)
+        metric.set_help(description)
+        metric.set_type(metric_type)
 
 
 class ReqHandlerMetrics(BaseHTTPRequestHandler):
+
+    MetricsHandler.init("http_get_requests", "counter", "Number GET requests accepted")
+    MetricsHandler.init("http_get_metrics", "counter", "Number times the metrics endpoint was called")
 
     def do_GET(self):
         self.send_response(200)
@@ -231,17 +280,22 @@ class ReqHandlerMetrics(BaseHTTPRequestHandler):
 
         elif self.path == "/metrics":
             MetricsHandler.inc("http_get_metrics", 1)
-            metric_header = f"""# TYPE {MetricsHandler.get_metrics_name()} counter\n"""
-            self.wfile.write(bytes(metric_header, "utf-8"))
 
-            for _, metric_payload in MetricsHandler.get_metrics().items():
+            for metric_name, metric_item in MetricsHandler.get_metrics().items():
 
-                metric_value = metric_payload['value']
-                metric_labels_formatted = metric_payload['labels_formatted']
-                metric_labels_formatted_joined = ",".join(metric_labels_formatted)
+                help_header = f"""# HELP {metric_name} {metric_item.get_help()}\n"""
+                self.wfile.write(bytes(help_header, "utf-8"))
 
-                metric_line = f"""{MetricsHandler.get_metrics_name()}{{{metric_labels_formatted_joined}}} {metric_value}\n"""
-                self.wfile.write(bytes(metric_line, "utf-8"))
+                type_header = f"""# TYPE {metric_name} {metric_item.get_type()}\n"""
+                self.wfile.write(bytes(type_header, "utf-8"))
+
+                for _, labelset in metric_item.get_labelsets().items():
+                    metric_value = labelset['value']
+                    metric_labels_formatted_joined = ",".join(labelset['labels_formatted'])
+
+                    metric_line = f"""{metric_name}{{{metric_labels_formatted_joined}}} {metric_value}\n"""
+                    self.wfile.write(bytes(metric_line, "utf-8"))
+
 
         else:
             response = {"error": True, "message": "Bad request, bad"}
@@ -257,17 +311,32 @@ if __name__ == '__main__':
     logging.root.handlers = []
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s level=%(levelname)s %(message)s function=%(name)s.%(funcName)s",
+        format="%(asctime)s level=%(levelname)s function=%(name)s.%(funcName)s %(message)s",
         handlers=[
             logging.StreamHandler()
         ]
     )
 
+    MetricsHandler.init("calls", "counter", "Number of calls I've received")
+    MetricsHandler.init("doorbells", "counter", "Number of doorbells I've answered")
+    MetricsHandler.init("yawns", "counter", "Quite self-explanatory")
+
     MetricsHandler.inc("calls", 1)
-    MetricsHandler.inc("calls", 20)
-    MetricsHandler.inc("calls", 1000)
-    MetricsHandler.inc("calls", 1)
-    MetricsHandler.inc("calls", 1, additional="cat", it_is="different")
+    MetricsHandler.inc("calls", 1, who="telemarketers", when="morning")
+    MetricsHandler.inc("calls", 1, who="collectors", when="all_day")
+    MetricsHandler.inc("calls", 1, who="collectors", when="all_day")
+    MetricsHandler.inc("calls", 1, who="collectors", when="all_day")
+    MetricsHandler.inc("calls", 1, who="collectors", when="all_day")
+
+    MetricsHandler.inc("doorbells", 1)
+    MetricsHandler.inc("doorbells", 2, also_knoked="yes")
+    MetricsHandler.inc("doorbells", 8, also_knoked="no")
+    MetricsHandler.inc("doorbells", 3, also_knoked="yes")
+
+    MetricsHandler.inc("yawns", 8, satisfying="yes")
+    MetricsHandler.inc("yawns", 1, satisfying="no", loud="yes")
+    MetricsHandler.inc("yawns", 1, satisfying="yes", loud="yes")
+    MetricsHandler.inc("yawns", 1, satisfying="meh",  loud="no")
 
     MetricsHandler.set("busy", 13)
 
