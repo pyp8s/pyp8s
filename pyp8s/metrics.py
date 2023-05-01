@@ -53,12 +53,21 @@ class Singleton(type):
 
 class Metric():
 
-    def __init__(self):
-        self.metric_name = None
+    def __init__(self, metric_name=None):
+        self.metric_name = metric_name
         self.help_header = None
         self.metric_type = None
 
         self.data = {}
+
+    def __unicode__(self):
+        return f"<Metric {self.metric_name} ({self.metric_type}) with {len(self.data.keys())} labels>"
+
+    def __str__(self):
+        return f"<Metric {self.metric_name} ({self.metric_type}) with {len(self.data.keys())} labels>"
+
+    def __repr__(self):
+        return self.__str__()
 
     def __format_labels(self, **kwargs):
         return ["=".join([f"{pair[0]}", f'"{pair[1]}"']) for pair in kwargs.items()]
@@ -98,11 +107,17 @@ class Metric():
 
         return self.data[labelset_key]
 
+    def set_name(self, metric_name):
+        self.metric_name = metric_name
+
     def set_type(self, metric_type):
         self.metric_type = metric_type
 
     def set_help(self, help_header):
         self.help_header = help_header
+
+    def get_name(self):
+        return self.metric_name
 
     def get_type(self):
         return self.metric_type
@@ -201,11 +216,17 @@ class MetricsHandler(metaclass=Singleton):
         return self.metrics
 
     @staticmethod
+    def get_metric(metric_name):
+        self = MetricsHandler()
+        logging.debug(f"Returning metric {metric_name}")
+        return self.metrics[metric_name]
+
+    @staticmethod
     def __get_metric_obj(metric_name):
         self = MetricsHandler()
 
         if metric_name not in self.metrics:
-            self.metrics[metric_name] = Metric()
+            self.metrics[metric_name] = Metric(metric_name=metric_name)
 
         return self.metrics[metric_name]
 
@@ -347,6 +368,8 @@ if __name__ == '__main__':
 
     MetricsHandler.set("busy", 200, **small_hack)
     MetricsHandler.set("busy", 4, **{"for": "the", "gods": "sake", "please": "stop"})
+
+    logging.info(f"Metrics: {MetricsHandler.get_metrics()}")
 
     MetricsHandler.serve(listen_address="127.0.0.1", listen_port=9000)
     logging.debug("Waiting before shutdown")
