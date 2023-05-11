@@ -73,17 +73,9 @@ class Metric():
         return ["=".join([f"{pair[0]}", f'"{pair[1]}"']) for pair in kwargs.items()]
 
     def __craft_labelset_key(self, **kwargs):
-
-        logging.debug(f"Crafting a metric key from kwargs='{kwargs}'")
-
         kwargs_items_sorted = sorted(kwargs.items(), key=lambda x: x[0].casefold())
-        logging.debug(f"Crafting a metric key kwargs_items_sorted='{kwargs_items_sorted}'")
-
         kwargs_items_joined_pairs = ["_".join([str(pair[0]), str(pair[1])]) for pair in kwargs_items_sorted]
-        logging.debug(f"Crafting a metric key kwargs_items_joined_pairs='{kwargs_items_joined_pairs}'")
-
         kwargs_items_joined_full = "_".join(kwargs_items_joined_pairs)
-        logging.debug(f"Crafting a metric key kwargs_items_joined_full='{kwargs_items_joined_full}'")
 
         return kwargs_items_joined_full
 
@@ -93,8 +85,6 @@ class Metric():
 
         if labelset_key not in self.data:
 
-            logging.debug(f"Initialising metric '{labelset_key}'")
-
             self.data[labelset_key] = {
                 "value": 0,
                 "labels": {
@@ -102,8 +92,6 @@ class Metric():
                 },
                 "labels_formatted": self.__format_labels(**kwargs)
             }
-
-            logging.debug(f"New metric initialised: '{self.data[labelset_key]}'")
 
         return self.data[labelset_key]
 
@@ -143,7 +131,6 @@ class Metric():
         """
 
         metric = self.__get_labelset_item(**kwargs)
-        logging.debug(f"Incrementing metric '{metric}' (current {metric['value']})")
         metric["value"] += increment
         logging.debug(f"Incremented metric '{metric}' (new {metric['value']})")
 
@@ -162,7 +149,6 @@ class Metric():
         """
 
         metric = self.__get_labelset_item(**kwargs)
-        logging.debug(f"Incrementing metric '{metric}' (current {metric['value']})")
         metric["value"] = value
         logging.debug(f"Incremented metric '{metric}' (new {metric['value']})")
 
@@ -183,42 +169,40 @@ class MetricsHandler(metaclass=Singleton):
 
         if not self.__is_serving():
 
-            logging.debug(f"UUID={self.uuid} Starting the metrics server on {listen_address} port {listen_port}")
+            logging.debug(f"Starting the metrics server on {listen_address} port {listen_port}")
 
             self.server = ThreadedHTTPServer((listen_address, listen_port), ReqHandlerMetrics)
             self.server_thread = threading.Thread(target=self.server.serve_forever)
 
             self.server_thread.daemon = True
 
-            logging.info(f"UUID={self.uuid} Starting metrics server")
+            logging.info(f"Starting metrics server")
             self.server_thread.start()
-            logging.info(f"UUID={self.uuid} Metrics server started")
+            logging.info(f"Metrics server started")
 
         else:
-            logging.error(f"UUID={self.uuid} Tried to start the metrics server twice")
-            raise Exception(f"UUID={self.uuid} Server already started: {self.server}")
+            logging.error(f"Tried to start the metrics server twice")
+            raise Exception(f"Server already started: {self.server}")
 
     @staticmethod
     def shutdown():
         self = MetricsHandler()
-        logging.debug(f"UUID={self.uuid} Shutting down the metrics server")
+        logging.debug(f"Shutting down the metrics server")
 
         try:
             self.server.shutdown()
         except Exception as e:
-            logging.error(f"UUID={self.uuid} Couldn't shutdown the metrics server: {e}")
+            logging.error(f"Couldn't shutdown the metrics server: {e}")
             raise e
 
     @staticmethod
     def get_metrics():
         self = MetricsHandler()
-        logging.debug("Returning metrics")
         return self.metrics
 
     @staticmethod
     def get_metric(metric_name):
         self = MetricsHandler()
-        logging.debug(f"Returning metric {metric_name}")
         return self.metrics[metric_name]
 
     @staticmethod
