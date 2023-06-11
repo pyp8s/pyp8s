@@ -196,6 +196,27 @@ class MetricsHandler(metaclass=Singleton):
             raise e
 
     @staticmethod
+    def render():
+        self = MetricsHandler()
+        result = []
+        for metric_name, metric_item in MetricsHandler.get_metrics().items():
+
+            help_header = f"""# HELP {metric_name} {metric_item.get_help()}\n"""
+            result.append(help_header)
+
+            type_header = f"""# TYPE {metric_name} {metric_item.get_type()}\n"""
+            result.append(type_header)
+
+            for _, labelset in metric_item.get_labelsets().items():
+                metric_value = labelset['value']
+                metric_labels_formatted_joined = ",".join(labelset['labels_formatted'])
+
+                metric_line = f"""{metric_name}{{{metric_labels_formatted_joined}}} {metric_value}\n"""
+                result.append(metric_line)
+
+        return "".join(result)
+
+    @staticmethod
     def get_metrics():
         self = MetricsHandler()
         return self.metrics
@@ -259,12 +280,15 @@ class MetricsHandler(metaclass=Singleton):
         metric.set(value=value, **kwargs)
 
     @staticmethod
-    def init(metric_name, metric_type, description=None):
+    def init(metric_name, metric_type, description=None, init_value=None):
         self = MetricsHandler()
 
         metric = self.__get_metric_obj(metric_name=metric_name)
         metric.set_help(description)
         metric.set_type(metric_type)
+
+        if init_value is not None:
+            metric.set(value=init_value)
 
 
 class ReqHandlerMetrics(BaseHTTPRequestHandler):
@@ -285,22 +309,7 @@ class ReqHandlerMetrics(BaseHTTPRequestHandler):
 
         elif self.path == "/metrics":
             MetricsHandler.inc("http_get_metrics", 1)
-
-            for metric_name, metric_item in MetricsHandler.get_metrics().items():
-
-                help_header = f"""# HELP {metric_name} {metric_item.get_help()}\n"""
-                self.wfile.write(bytes(help_header, "utf-8"))
-
-                type_header = f"""# TYPE {metric_name} {metric_item.get_type()}\n"""
-                self.wfile.write(bytes(type_header, "utf-8"))
-
-                for _, labelset in metric_item.get_labelsets().items():
-                    metric_value = labelset['value']
-                    metric_labels_formatted_joined = ",".join(labelset['labels_formatted'])
-
-                    metric_line = f"""{metric_name}{{{metric_labels_formatted_joined}}} {metric_value}\n"""
-                    self.wfile.write(bytes(metric_line, "utf-8"))
-
+            self.wfile.write(bytes(MetricsHandler.render(), "utf-8"))
 
         else:
             response = {"error": True, "message": "Bad request, bad"}
@@ -325,6 +334,7 @@ if __name__ == '__main__':
     MetricsHandler.init("calls", "counter", "Number of calls I've received")
     MetricsHandler.init("doorbells", "counter", "Number of doorbells I've answered")
     MetricsHandler.init("yawns", "counter", "Quite self-explanatory")
+    MetricsHandler.init("giggles", "counter", "Not what you thought it was", init_value=10)
 
     MetricsHandler.inc("calls", 1)
     MetricsHandler.inc("calls", 1, who="telemarketers", when="morning")
@@ -354,6 +364,7 @@ if __name__ == '__main__':
     MetricsHandler.set("busy", 4, **{"for": "the", "gods": "sake", "please": "stop"})
 
     logging.info(f"Metrics: {MetricsHandler.get_metrics()}")
+    logging.info(f"Rendered: {MetricsHandler.render()}")
 
     MetricsHandler.serve(listen_address="127.0.0.1", listen_port=9000)
     logging.debug("Waiting before shutdown")

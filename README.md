@@ -27,6 +27,7 @@ if __name__ == '__main__':
     meh.init("doorbells", "counter", "Number of doorbells I've answered")
     meh.init("yawns", "counter", "Quite self-explanatory")
     meh.init("mood", "gauge", "How do I feel myself from 1 to good enough")
+    meh.init("giggles", "counter", "Measurement of the joke power.", init_value=0)
 
     meh.inc("calls", 1)
 
@@ -65,7 +66,25 @@ yawns{satisfying="no",loud="yes"} 1
 # HELP mood How do I feel myself from 1 to good enough
 # TYPE mood gauge
 mood{} 6
+# HELP giggles Measurement of the joke power.
+# TYPE giggles counter
+giggles{} -50
 ```
+
+## Usage without starting a server
+
+When you only need this thing to collect and render metrics:
+
+```python
+from pyp8s import MetricsHandler as meh
+
+if __name__ == '__main__':
+    meh.init("calls", "counter", "Number of calls I've received")
+
+    print(meh.render())
+```
+
+`render()` returns a string object.
 
 ## Test environment
 
