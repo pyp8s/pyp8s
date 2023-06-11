@@ -68,7 +68,7 @@ yawns{satisfying="no",loud="yes"} 1
 mood{} 6
 # HELP giggles Measurement of the joke power.
 # TYPE giggles counter
-giggles{} -50
+giggles{} 0
 ```
 
 ## Usage without starting a server
