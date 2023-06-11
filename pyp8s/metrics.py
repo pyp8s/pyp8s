@@ -199,7 +199,7 @@ class MetricsHandler(metaclass=Singleton):
     def render():
         self = MetricsHandler()
         result = []
-        for metric_name, metric_item in MetricsHandler.get_metrics().items():
+        for metric_name, metric_item in self.get_metrics().items():
 
             help_header = f"""# HELP {metric_name} {metric_item.get_help()}\n"""
             result.append(help_header)
