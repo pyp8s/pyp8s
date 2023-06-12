@@ -214,7 +214,7 @@ class MetricsHandler(metaclass=Singleton):
                 metric_line = f"""{metric_name}{{{metric_labels_formatted_joined}}} {metric_value}\n"""
                 result.append(metric_line)
 
-        return "".join(result)
+        return "\n".join(result)
 
     @staticmethod
     def get_metrics():
