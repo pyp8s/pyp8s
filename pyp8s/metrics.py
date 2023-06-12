@@ -201,17 +201,17 @@ class MetricsHandler(metaclass=Singleton):
         result = []
         for metric_name, metric_item in self.get_metrics().items():
 
-            help_header = f"""# HELP {metric_name} {metric_item.get_help()}\n"""
+            help_header = f"""# HELP {metric_name} {metric_item.get_help()}"""
             result.append(help_header)
 
-            type_header = f"""# TYPE {metric_name} {metric_item.get_type()}\n"""
+            type_header = f"""# TYPE {metric_name} {metric_item.get_type()}"""
             result.append(type_header)
 
             for _, labelset in metric_item.get_labelsets().items():
                 metric_value = labelset['value']
                 metric_labels_formatted_joined = ",".join(labelset['labels_formatted'])
 
-                metric_line = f"""{metric_name}{{{metric_labels_formatted_joined}}} {metric_value}\n"""
+                metric_line = f"""{metric_name}{{{metric_labels_formatted_joined}}} {metric_value}"""
                 result.append(metric_line)
 
         return "\n".join(result)
