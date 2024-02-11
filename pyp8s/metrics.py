@@ -41,6 +41,8 @@ import json
 import time
 
 
+logger = logging.getLogger(__name__)
+
 class Singleton(type):
 
     _instance = None
@@ -132,7 +134,7 @@ class Metric():
 
         metric = self.__get_labelset_item(**kwargs)
         metric["value"] += increment
-        logging.debug(f"Incremented metric '{metric}' (new {metric['value']})")
+        logger.debug(f"Incremented metric '{metric}' (new {metric['value']})")
 
     def set(self, value, *args, **kwargs):
         """Sets metric value to a given number
@@ -150,7 +152,7 @@ class Metric():
 
         metric = self.__get_labelset_item(**kwargs)
         metric["value"] = value
-        logging.debug(f"Incremented metric '{metric}' (new {metric['value']})")
+        logger.debug(f"Incremented metric '{metric}' (new {metric['value']})")
 
 
 class MetricsHandler(metaclass=Singleton):
@@ -169,30 +171,30 @@ class MetricsHandler(metaclass=Singleton):
 
         if not self.__is_serving():
 
-            logging.debug(f"Starting the metrics server on {listen_address} port {listen_port}")
+            logger.debug(f"Starting the metrics server on {listen_address} port {listen_port}")
 
             self.server = ThreadedHTTPServer((listen_address, listen_port), ReqHandlerMetrics)
             self.server_thread = threading.Thread(target=self.server.serve_forever)
 
             self.server_thread.daemon = True
 
-            logging.info(f"Starting metrics server")
+            logger.info(f"Starting metrics server")
             self.server_thread.start()
-            logging.info(f"Metrics server started")
+            logger.info(f"Metrics server started")
 
         else:
-            logging.error(f"Tried to start the metrics server twice")
+            logger.error(f"Tried to start the metrics server twice")
             raise Exception(f"Server already started: {self.server}")
 
     @staticmethod
     def shutdown():
         self = MetricsHandler()
-        logging.debug(f"Shutting down the metrics server")
+        logger.debug(f"Shutting down the metrics server")
 
         try:
             self.server.shutdown()
         except Exception as e:
-            logging.error(f"Couldn't shutdown the metrics server: {e}")
+            logger.error(f"Couldn't shutdown the metrics server: {e}")
             raise e
 
     @staticmethod
@@ -363,10 +365,10 @@ if __name__ == '__main__':
     MetricsHandler.set("busy", 200, **small_hack)
     MetricsHandler.set("busy", 4, **{"for": "the", "gods": "sake", "please": "stop"})
 
-    logging.info(f"Metrics: {MetricsHandler.get_metrics()}")
-    logging.info(f"Rendered: {MetricsHandler.render()}")
+    logger.info(f"Metrics: {MetricsHandler.get_metrics()}")
+    logger.info(f"Rendered: {MetricsHandler.render()}")
 
     MetricsHandler.serve(listen_address="127.0.0.1", listen_port=9000)
-    logging.debug("Waiting before shutdown")
+    logger.debug("Waiting before shutdown")
     time.sleep(20)
     MetricsHandler.shutdown()
