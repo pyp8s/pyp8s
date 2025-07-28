@@ -239,18 +239,54 @@ class MetricsHandler(metaclass=Singleton):
         return self.metrics[metric_name]
 
     @staticmethod
-    def set_page(path, content):
+    def set_page(path, content=None, callback=None):
+        """Sets page content or callback for the given path
+
+        :param path: Path to the page
+        :type path: str
+        :param content: Content of the page, if provided, callback will not be used
+        :type content: str or None
+        :param callback: Callback to execute to get the page content, if provided, content will not be used
+        :type callback: callable or None
+
+        :return: Page configuration
+        :rtype: dict[str, any]
+        """
+        assert not all([content is None, callback is None]), "At least one of content or callback must be provided"
+        assert not all([content is not None, callback is not None]), "Only one of content or callback can be provided"
+
         self = MetricsHandler()
-        self.pages[path] = content
+        self.pages[path] = {
+            "content": content,
+            "callback": callback
+        }
 
         return self.pages[path]
 
     @staticmethod
     def get_page(path):
-        self = MetricsHandler()
-        page = self.pages.get(path, None)
+        """Retrieves page by path
 
-        return page
+        :param path: Path to the page
+        :type path: str
+
+        :return: Page content or result of the callback
+        :rtype: str or None
+        """
+        self = MetricsHandler()
+        try:
+            page_config = self.pages[path]
+
+            if page_config['content'] is not None:
+                return page_config['content']
+
+            elif page_config['callback'] is not None:
+                page = page_config['callback']()
+                return page
+
+        except Exception as e:
+            logger.error(f"Error while executing callback for page '{path}' {e.__class__.__name__}: {e}")
+            return None
 
     @staticmethod
     def inc(metric_name, increment, *args, **kwargs):
@@ -314,28 +350,38 @@ class ReqHandlerMetrics(BaseHTTPRequestHandler):
     MetricsHandler.init("http_get_metrics", "counter", "Number times the metrics endpoint was called")
 
     def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
+        response_code = 500
+        response_bytes = b"null"
 
         MetricsHandler.inc("http_get_requests", 1)
 
         if self.path == "/":
             MetricsHandler.inc("http_get_index", 1)
-            header = """<html><head><title>pyp8s Exporter</title></head><body><p><a href="/metrics">Metrics</a></p></body></html>\n"""
-            self.wfile.write(bytes(header, "utf-8"))
+            response_bytes = bytes("""<html><head><title>pyp8s Exporter</title></head><body><p><a href="/metrics">Metrics</a></p></body></html>\n""", "utf-8")
+            response_code = 200
 
         elif self.path == "/metrics":
             MetricsHandler.inc("http_get_metrics", 1)
-            self.wfile.write(bytes(MetricsHandler.render(), "utf-8"))
+            response_bytes = bytes(MetricsHandler.render(), "utf-8")
+            response_code = 200
 
         else:
 
-            if page := MetricsHandler.get_page(path=self.path):
-                self.wfile.write(bytes(page, "utf-8"))
-                return None
+            page = MetricsHandler.get_page(path=self.path)
 
-            response = {"error": True, "message": "Bad request, bad"}
-            self.wfile.write(json.dumps(response))
+            if page is None:
+                response = {"error": True, "message": f"Couldn't retrieve page {self.path}"}
+                response_bytes = json.dumps(response).encode("utf-8")
+                response_code = 500
+
+            else:
+                response_bytes = bytes(page, "utf-8")
+                response_code = 200
+        
+        self.send_response(response_code)
+        self.end_headers()
+
+        self.wfile.write(response_bytes)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -385,7 +431,9 @@ if __name__ == '__main__':
     MetricsHandler.set("busy", 200, **small_hack)
     MetricsHandler.set("busy", 4, **{"for": "the", "gods": "sake", "please": "stop"})
 
-    MetricsHandler.set_page(path="/threads", content="meh")
+    MetricsHandler.set_page(path="/content", content="meh")
+    MetricsHandler.set_page(path="/callback", callback=lambda: "\n".join([ thread.name for thread in threading.enumerate() ]) )
+    MetricsHandler.set_page(path="/callback_error", callback=lambda: None)
 
     logger.info(f"Metrics: {MetricsHandler.get_metrics()}")
     logger.info(f"Rendered: {MetricsHandler.render()}")
