@@ -161,6 +161,7 @@ class MetricsHandler(metaclass=Singleton):
         self.uuid = str(uuid.uuid4())
         self.server = None
         self.metrics = {}
+        self.pages = {}
 
     def __is_serving(self):
         return self.server is not None
@@ -236,6 +237,20 @@ class MetricsHandler(metaclass=Singleton):
             self.metrics[metric_name] = Metric(metric_name=metric_name)
 
         return self.metrics[metric_name]
+
+    @staticmethod
+    def set_page(path, content):
+        self = MetricsHandler()
+        self.pages[path] = content
+
+        return self.pages[path]
+
+    @staticmethod
+    def get_page(path):
+        self = MetricsHandler()
+        page = self.pages.get(path, None)
+
+        return page
 
     @staticmethod
     def inc(metric_name, increment, *args, **kwargs):
@@ -314,6 +329,11 @@ class ReqHandlerMetrics(BaseHTTPRequestHandler):
             self.wfile.write(bytes(MetricsHandler.render(), "utf-8"))
 
         else:
+
+            if page := MetricsHandler.get_page(path=self.path):
+                self.wfile.write(bytes(page, "utf-8"))
+                return None
+
             response = {"error": True, "message": "Bad request, bad"}
             self.wfile.write(json.dumps(response))
 
@@ -364,6 +384,8 @@ if __name__ == '__main__':
 
     MetricsHandler.set("busy", 200, **small_hack)
     MetricsHandler.set("busy", 4, **{"for": "the", "gods": "sake", "please": "stop"})
+
+    MetricsHandler.set_page(path="/threads", content="meh")
 
     logger.info(f"Metrics: {MetricsHandler.get_metrics()}")
     logger.info(f"Rendered: {MetricsHandler.render()}")
